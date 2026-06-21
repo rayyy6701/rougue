@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-Based Roguelike RPG with Voice</title>
+    <style>
+        :root {
+            --bg-main: #0f111a;
+            --bg-card: #151824;
+            --bg-input: #1e2235;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-hover: #4f46e5;
+            --color-hp: #ef4444;
+            --color-exp: #10b981;
+            --color-gold: #f59e0b;
+            --color-border: #2d3149;
+            --radius: 12px;
+            --transition: all 0.25s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-card);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+        }
+
+        /* メインレイアウト（3カラムグリッド） */
+        .game-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 20px;
+            flex: 1;
+            padding: 20px;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        /* 共通パネルスタイル */
+        .panel {
+            background-color: var(--bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 左カラム: ステータス */
+        .status-item {
+            margin-bottom: 15px;
+        }
+
+        .status-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-weight: bold;
+        }
+
+        .bar-container {
+            background-color: var(--bg-input);
+            border-radius: 6px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .bar-hp { background-color: var(--color-hp); }
+        .bar-exp { background-color: var(--color-exp); }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background-color: var(--bg-input);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+        .stat-box .value.gold { color: var(--color-gold); }
+
+        /* 中央カラム: ログ & 選択肢 */
+        .main-panel {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .log-area {
+            flex: 1;
+            background-color: var(--bg-input);
+            border-radius: var(--radius);
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scroll-behavior: smooth;
+        }
+
+        .log-message {
+            animation: fadeIn 0.3s ease forwards;
+            padding: 6px 10px;
+            border-left: 3px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .log-message.system { border-color: var(--text-muted); color: var(--text-muted); }
+        .log-message.info { border-color: var(--accent-primary); }
+        .log-message.combat-player { border-color: #38bdf8; }
+        .log-message.combat-enemy { border-color: var(--color-hp); color: #fca5a5; }
+        .log-message.reward { border-color: var(--color-gold); color: #fcd34d; }
+        .log-message.danger { border-color: var(--color-hp); color: var(--color-hp); font-weight: bold; }
+
+        .action-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            min-height: 80px;
+        }
+
+        /* ボタンデザイン */
+        .btn {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background-color: var(--color-border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger { background-color: var(--color-hp); }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        /* 右カラム: インベントリ */
+        .inventory-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inventory-item {
+            background-color: var(--bg-input);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .item-effect {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .item-btn {
+            background-color: var(--color-border);
+            color: var(--text-main);
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .item-btn:hover {
+            background-color: var(--accent-primary);
+        }
+
+        .empty-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 900px) {
+            body { overflow: auto; height: auto; }
+            .game-container {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: visible;
+            }
+            .main-panel { order: -1; }
+            .log-area { height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Labyrinth Rogue</h1>
+    </header>
+
+    <div class="game-container">
+        <aside class="panel">
+            <h2 class="panel-title">Status</h2>
+            <div class="status-item">
+                <div class="status-label">
+                    <span>Name</span>
+                    <span id="char-name" class="status-value">-</span>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">
+                    <span>HP</span>
+                    <span id="char-hp-text" class="status-value">0 / 0</span>
+                </div>
+                <div class="bar-container">
+                    <div id="char-hp-bar" class="bar-fill bar-hp" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">
+                    <span>EXP (Next Level)</span>
+                    <span id="char-exp-text" class="status-value">0 / 0</span>
+                </div>
+                <div class="bar-container">
+                    <div id="char-exp-bar" class="bar-fill bar-exp" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">LEVEL</div>
+                    <div id="char-level" class="value">1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">ATK</div>
+                    <div id="char-atk" class="value">10</div>
+                </div>
+                <div class="stat-box" style="grid-column: span 2;">
+                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">GOLD</div>
+                    <div id="char-gold" class="value gold">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-grid" style="margin-top: 10px;">
+                <div class="stat-box" style="grid-column: span 2; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.1);">
+                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">CURRENT DEPTH</div>
+                    <div id="dungeon-depth" class="value" style="color: #cbd5e1;">0階層</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="panel main-panel">
+            <h2 class="panel-title">Adventure Log</h2>
+            <div id="log-area" class="log-area">
+                </div>
+            <div id="action-area" class="action-area">
+                </div>
+        </main>
+
+        <aside class="panel">
+            <h2 class="panel-title">Inventory</h2>
+            <div id="inventory-list" class="inventory-list">
+                </div>
+        </aside>
+    </div>
+
+    <script>
+        // ==========================================
+        // GAME CONFIGURATION & DICTIONARIES
+        // ==========================================
+        const ITEMS = {
+            POTION: { id: 'potion', name: '回復薬', type: 'use', effect: 30, desc: 'HPを30回復' },
+            HI_POTION: { id: 'hi_potion', name: '高級回復薬', type: 'use', effect: 75, desc: 'HPを75回復' },
+            SWORD: { id: 'sword', name: '鉄の剣', type: 'equip', effect: 5, desc: '攻撃力+5 (永続)' },
+            RARE_SWORD: { id: 'rare_sword', name: '魔剣レヴァテイン', type: 'equip', effect: 15, desc: '攻撃力+15 (永続)' }
+        };
+
+        const ENEMIES = [
+            { name: 'スライム', hp: 20, atk: 4, exp: 10, gold: 15 },
+            { name: 'ゴブリン', hp: 35, atk: 7, exp: 18, gold: 25 },
+            { name: '迷宮のオーク', hp: 60, atk: 12, exp: 35, gold: 50 },
+            { name: 'スケルトンナイト', hp: 80, atk: 16, exp: 55, gold: 70 },
+            { name: 'ドラゴン', hp: 200, atk: 28, exp: 150, gold: 200 }
+        ];
+
+        // ==========================================
+        // GAME STATE MANAGEMENT
+        // ==========================================
+        const GameState = {
+            player: {
+                name: '冒険者',
+                level: 1,
+                hp: 100,
+                maxHp: 100,
+                atk: 10,
+                exp: 0,
+                nextExp: 20,
+                gold: 0,
+                inventory: [ { ...ITEMS.POTION }, { ...ITEMS.SWORD } ]
+            },
+            depth: 0,
+            currentEnemy: null,
+            gameState: 'TITLE', // TITLE, EXPLORE, COMBAT, TREASURE, GAMEOVER
+
+            // 状態変更通知用のリスナー
+            listeners: [],
+            subscribe(listener) {
+                this.listeners.push(listener);
+            },
+            update() {
+                this.listeners.forEach(listener => listener(this));
+            }
+        };
+
+        // ==========================================
+        // GAME LOGIC CONTROLLER
+        // ==========================================
+        const GameController = {
+            init() {
+                UI.init();
+                GameState.subscribe(UI.render);
+                this.startNewGame();
+            },
+
+            startNewGame() {
+                GameState.player = {
+                    name: '冒険者',
+                    level: 1,
+                    hp: 100,
+                    maxHp: 100,
+                    atk: 10,
+                    exp: 0,
+                    nextExp: 20,
+                    gold: 50,
+                    inventory: [ { ...ITEMS.POTION }, { ...ITEMS.POTION } ]
+                };
+                GameState.depth = 0;
+                GameState.currentEnemy = null;
+                GameState.gameState = 'EXPLORE';
+                
+                UI.clearLog();
+                UI.addLog('--- 迷宮の探索が始まった。無限の闇があなたを迎え入れる。 ---', 'system');
+                GameState.update();
+            },
+
+            // 探索を進める
+            explore() {
+                GameState.depth++;
+                const rand = Math.random();
+
+                if (rand < 0.15) {
+                    // 平穏な道
+                    UI.addLog(`${GameState.depth}階層を進む。周囲は静まり返っている。安全に休憩がとれそうだ。`, 'info');
+                    GameState.gameState = 'EXPLORE';
+                } else if (rand < 0.50) {
+                    // 宝箱発見
+                    UI.addLog(`${GameState.depth}階層の暗がりに、古びた宝箱が佇んでいるのを発見した！`, 'reward');
+                    GameState.gameState = 'TREASURE';
+                } else {
+                    // 敵と遭遇
+                    this.triggerCombat();
+                }
+                GameState.update();
+            },
+
+            // 戦闘発生
+            triggerCombat() {
+                // 階層に応じて敵の強さをスケーリング
+                const enemyIndex = Math.min(
+                    Math.floor(Math.random() * (1 + Math.floor(GameState.depth / 4))), 
+                    ENEMIES.length - 1
+                );
+                const baseEnemy = ENEMIES[enemyIndex];
+                
+                // 深さに応じた微細な強化
+                const scale = 1 + (GameState.depth * 0.05);
+                GameState.currentEnemy = {
+                    name: baseEnemy.name,
+                    hp: Math.floor(baseEnemy.hp * scale),
+                    maxHp: Math.floor(baseEnemy.hp * scale),
+                    atk: Math.floor(baseEnemy.atk * scale),
+                    exp: Math.floor(baseEnemy.exp * scale),
+                    gold: Math.floor(baseEnemy.gold * scale)
+                };
+
+                UI.addLog(`前方から不気味な気配が迫る！【${GameState.currentEnemy.name}】が現れた！`, 'danger');
+                GameState.gameState = 'COMBAT';
+            },
+
+            // 戦闘：攻撃
+            attackTurn() {
+                if (GameState.gameState !== 'COMBAT' || !GameState.currentEnemy) return;
+
+                // プレイヤーの攻撃
+                const pDmg = Math.floor(GameState.player.atk * (0.9 + Math.random() * 0.3));
+                GameState.currentEnemy.hp -= pDmg;
+                UI.addLog(`あなたの攻撃！ ${GameState.currentEnemy.name}に ${pDmg} のダメージを与えた！`, 'combat-player');
+
+                // 敵の死亡判定
+                if (GameState.currentEnemy.hp <= 0) {
+                    this.winCombat();
+                    return;
+                }
+
+                // 敵の反撃
+                const eDmg = Math.floor(GameState.currentEnemy.atk * (0.9 + Math.random() * 0.3));
+                GameState.player.hp -= eDmg;
+                UI.addLog(`${GameState.currentEnemy.name}の反撃！ あなたは ${eDmg} のダメージを受けた！`, 'combat-enemy');
+
+                // プレイヤーの死亡判定
+                if (GameState.player.hp <= 0) {
+                    GameState.player.hp = 0;
+                    this.gameOver();
+                    return;
+                }
+
+                GameState.update();
+            },
+
+            // 戦闘：逃亡
+            flee() {
+                if (Math.random() < 0.4) {
+                    UI.addLog('うまく敵の隙を突いて逃げ出すことに成功した！', 'info');
+                    GameState.currentEnemy = null;
+                    GameState.gameState = 'EXPLORE';
+                } else {
+                    UI.addLog('逃げ出そうとしたが、敵に回り込まれてしまった！', 'combat-enemy');
+                    // 隙を突かれてダメージ
+                    const eDmg = Math.floor(GameState.currentEnemy.atk * 0.7);
+                    GameState.player.hp -= eDmg;
+                    UI.addLog(`${GameState.currentEnemy.name}から ${eDmg} の一撃を受ける！`, 'combat-enemy');
+                    
+                    if (GameState.player.hp <= 0) {
+                        GameState.player.hp = 0;
+                        this.gameOver();
+                        return;
+                    }
+                }
+                GameState.update();
+            },
+
+            // 戦闘勝利
+            winCombat() {
+                const enemy = GameState.currentEnemy;
+                UI.addLog(`${enemy.name}を討伐した！`, 'info');
+                
+                // 報酬
+                GameState.player.gold += enemy.gold;
+                UI.addLog(`戦利品: ${enemy.gold} コインを獲得。`, 'reward');
+                
+                this.gainExp(enemy.exp);
+                this.dropChance(0.4); // 40%でアイテムドロップ
+
+                GameState.currentEnemy = null;
+                GameState.gameState = 'EXPLORE';
+                GameState.update();
+            },
+
+            // 宝箱を開ける
+            openTreasure() {
+                const rand = Math.random();
+                if (rand < 0.4) {
+                    // コイン
+                    const goldFound = Math.floor(20 + Math.random() * 40 + (GameState.depth * 5));
+                    GameState.player.gold += goldFound;
+                    UI.addLog(`宝箱には大量のコインが入っていた！ 【${goldFound}コイン】を手に入れた。`, 'reward');
+                } else if (rand < 0.75) {
+                    // 薬品
+                    const item = Math.random() < 0.8 ? { ...ITEMS.POTION } : { ...ITEMS.HI_POTION };
+                    GameState.player.inventory.push(item);
+                    UI.addLog(`宝箱から不思議な小瓶を発見した！ 【${item.name}】を手に入れた。`, 'reward');
+                } else {
+                    // 武器
+                    const item = Math.random() < 0.85 ? { ...ITEMS.SWORD } : { ...ITEMS.RARE_SWORD };
+                    GameState.player.inventory.push(item);
+                    UI.addLog(`宝箱の底に眩しく輝く武具が眠っていた！ 【${item.name}】を手に入れた。`, 'reward');
+                }
+
+                GameState.gameState = 'EXPLORE';
+                GameState.update();
+            },
+
+            // 経験値獲得とレベルアップ
+            gainExp(amount) {
+                GameState.player.exp += amount;
+                UI.addLog(`${amount} の経験値を獲得した。`, 'info');
+
+                if (GameState.player.exp >= GameState.player.nextExp) {
+                    GameState.player.level++;
+                    GameState.player.exp -= GameState.player.nextExp;
+                    GameState.player.nextExp = Math.floor(GameState.player.nextExp * 1.5);
+                    
+                    // ステータス上昇
+                    const hpIncrease = 15 + Math.floor(Math.random() * 10);
+                    const atkIncrease = 2 + Math.floor(Math.random() * 3);
+                    
+                    GameState.player.maxHp += hpIncrease;
+                    GameState.player.hp = GameState.player.maxHp; // レベルアップで全回復
+                    GameState.player.atk += atkIncrease;
+
+                    UI.addLog(`★★ レベルアップ！ レベルが ${GameState.player.level} に上がった！ ★★`, 'reward');
+                    UI.addLog(`最大HPが ${hpIncrease} 上昇し、全回復した。攻撃力が ${atkIncrease} 上昇した。`, 'info');
+                }
+            },
+
+            // アイテムドロップ処理
+            dropChance(probability) {
+                if (Math.random() < probability) {
+                    const pool = [ITEMS.POTION, ITEMS.POTION, ITEMS.HI_POTION, ITEMS.SWORD];
+                    const selected = pool[Math.floor(Math.random() * pool.length)];
+                    GameState.player.inventory.push({ ...selected });
+                    UI.addLog(`敵が何かを落とした！ 【${selected.name}】を拾い上げ、鞄にしまった。`, 'reward');
+                }
+            },
+
+            // アイテムの使用・装備
+            useItem(index) {
+                const item = GameState.player.inventory[index];
+                if (!item) return;
+
+                if (item.type === 'use') {
+                    // 回復アイテム
+                    if (GameState.player.hp >= GameState.player.maxHp) {
+                        UI.addLog('体力は既に満タンだ。', 'system');
+                        return;
+                    }
+                    GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + item.effect);
+                    UI.addLog(`【${item.name}】を使用した。HPが ${item.effect} 回復した。`, 'info');
+                    GameState.player.inventory.splice(index, 1); // 消費
+                } else if (item.type === 'equip') {
+                    // 装備アイテム
+                    GameState.player.atk += item.effect;
+                    UI.addLog(`【${item.name}】を装備した！ 攻撃力が永続的に ${item.effect} 上昇した。`, 'reward');
+                    GameState.player.inventory.splice(index, 1); // 装備として消費（永続化）
+                }
+
+                GameState.update();
+            },
+
+            // ゲームオーバー
+            gameOver() {
+                UI.addLog(`目の前が真っ暗になった... あなたは${GameState.depth}階層で力尽きた。`, 'danger');
+                GameState.gameState = 'GAMEOVER';
+                GameState.update();
+            }
+        };
+
+        // ==========================================
+        // UI RENDERING ENGINE (DOM INFRASTRUCTURE)
+        // ==========================================
+        const UI = {
+            init() {
+                this.charName = document.getElementById('char-name');
+                this.charHpText = document.getElementById('char-hp-text');
+                this.charHpBar = document.getElementById('char-hp-bar');
+                this.charExpText = document.getElementById('char-exp-text');
+                this.charExpBar = document.getElementById('char-exp-bar');
+                this.charLevel = document.getElementById('char-level');
+                this.charAtk = document.getElementById('char-atk');
+                this.charGold = document.getElementById('char-gold');
+                this.dungeonDepth = document.getElementById('dungeon-depth');
+                this.logArea = document.getElementById('log-area');
+                this.actionArea = document.getElementById('action-area');
+                this.inventoryList = document.getElementById('inventory-list');
+            },
+
+            clearLog() {
+                this.logArea.innerHTML = '';
+            },
+
+            addLog(text, type = 'info') {
+                const msg = document.createElement('div');
+                msg.className = `log-message ${type}`;
+                msg.innerText = text;
+                this.logArea.appendChild(msg);
+                this.logArea.scrollTop = this.logArea.scrollHeight;
+
+                // ─── 【音声合成システム】の融合箇所 ───
+                // 記号や装飾（「★」や「---」など）は読み上げると不自然なので少し削る
+                const cleanText = text.replace(/[★\-\[\]【】]/g, '');
+
+                // 音声合成のインスタンスを作成
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'ja-JP';
+                utterance.rate = 1.3;  // 読み上げ速度
+                utterance.pitch = 0.8; // 音程（アンドロイド感のあるやや低音）
+                utterance.volume = 0.8; // 音量
+
+                // 連続クリック時に音声が遅延して渋滞するのを防ぐため、前の音声をキャンセルして再生
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+                // ──────────────────────────────────
+            },
+
+            render(state) {
+                // 1. ステータスの同期
+                UI.charName.innerText = state.player.name;
+                UI.charHpText.innerText = `${state.player.hp} / ${state.player.maxHp}`;
+                
+                const hpPercent = (state.player.hp / state.player.maxHp) * 100;
+                UI.charHpBar.style.width = `${hpPercent}%`;
+
+                UI.charExpText.innerText = `${state.player.exp} / ${state.player.nextExp}`;
+                const expPercent = (state.player.exp / state.player.nextExp) * 100;
+                UI.charExpBar.style.width = `${expPercent}%`;
+
+                UI.charLevel.innerText = state.player.level;
+                UI.charAtk.innerText = state.player.atk;
+                UI.charGold.innerText = state.player.gold;
+                UI.dungeonDepth.innerText = `${state.depth} 階層`;
+
+                // 2. インベントリの動的描写
+                UI.inventoryList.innerHTML = '';
+                if (state.player.inventory.length === 0) {
+                    UI.inventoryList.innerHTML = '<div class="empty-text">鞄は空っぽです</div>';
+                } else {
+                    state.player.inventory.forEach((item, idx) => {
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'inventory-item';
+                        
+                        const actionLabel = item.type === 'equip' ? '装備' : '使う';
+                        
+                        itemEl.innerHTML = `
+                            <div class="item-info">
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-effect">${item.desc}</span>
+                            </div>
+                            <button class="item-btn" onclick="GameController.useItem(${idx})">${actionLabel}</button>
+                        `;
+                        UI.inventoryList.appendChild(itemEl);
+                    });
+                }
+
+                // 3. アクションエリア（選択肢）の動的制御
+                UI.actionArea.innerHTML = '';
+                
+                if (state.gameState === 'EXPLORE') {
+                    UI.createActionButton('奥へ進む', () => GameController.explore());
+                } else if (state.gameState === 'COMBAT') {
+                    UI.createActionButton(`戦う (敵HP: ${state.currentEnemy.hp})`, () => GameController.attackTurn(), 'btn-danger');
+                    UI.createActionButton('逃げる', () => GameController.flee());
+                } else if (state.gameState === 'TREASURE') {
+                    UI.createActionButton('宝箱を開ける', () => GameController.openTreasure());
+                } else if (state.gameState === 'GAMEOVER') {
+                    UI.createActionButton('タイトルに戻り再挑戦', () => GameController.startNewGame(), 'btn-danger');
+                }
+            },
+
+            createActionButton(text, onClickEvent, customClass = '') {
+                const btn = document.createElement('button');
+                btn.className = `btn ${customClass}`;
+                btn.innerText = text;
+                btn.onclick = onClickEvent;
+                UI.actionArea.appendChild(btn);
+            }
+        };
+
+        // ==========================================
+        // GAME START ENTRYPOINT
+        // ==========================================
+        window.onload = () => {
+            GameController.init();
+        };
+    </script>
+</body>
+</html>
