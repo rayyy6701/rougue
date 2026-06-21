@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text-Based Roguelike RPG with Voice</title>
+    <title>Advanced Roguelike RPG with Voice</title>
     <style>
         :root {
             --bg-main: #0f111a;
@@ -53,10 +53,9 @@
             text-transform: uppercase;
         }
 
-        /* メインレイアウト（3カラムグリッド） */
         .game-container {
             display: grid;
-            grid-template-columns: 280px 1fr 300px;
+            grid-template-columns: 280px 1fr 320px;
             gap: 20px;
             flex: 1;
             padding: 20px;
@@ -64,7 +63,6 @@
             overflow: hidden;
         }
 
-        /* 共通パネルスタイル */
         .panel {
             background-color: var(--bg-card);
             border: 1px solid var(--color-border);
@@ -79,7 +77,7 @@
         .panel-title {
             font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             padding-bottom: 8px;
             border-bottom: 1px solid var(--color-border);
             color: var(--text-muted);
@@ -88,210 +86,58 @@
         }
 
         /* 左カラム: ステータス */
-        .status-item {
-            margin-bottom: 15px;
-        }
-
-        .status-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-
-        .status-value {
-            font-weight: bold;
-        }
-
-        .bar-container {
-            background-color: var(--bg-input);
-            border-radius: 6px;
-            height: 12px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .bar-fill {
-            height: 100%;
-            width: 100%;
-            transition: width 0.3s ease;
-        }
-
+        .status-item { margin-bottom: 15px; }
+        .status-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; }
+        .status-value { font-weight: bold; }
+        .bar-container { background-color: var(--bg-input); border-radius: 6px; height: 12px; width: 100%; overflow: hidden; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.3s ease; }
         .bar-hp { background-color: var(--color-hp); }
         .bar-exp { background-color: var(--color-exp); }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .stat-box {
-            background-color: var(--bg-input);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-box .value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--accent-primary);
-        }
-        .stat-box .value.gold { color: var(--color-gold); }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .stat-box { background-color: var(--bg-input); padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-box .value { font-size: 1.2rem; font-weight: bold; color: var(--accent-primary); }
 
         /* 中央カラム: ログ & 選択肢 */
-        .main-panel {
-            grid-column: 2;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .log-area {
-            flex: 1;
-            background-color: var(--bg-input);
-            border-radius: var(--radius);
-            padding: 15px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            scroll-behavior: smooth;
-        }
-
-        .log-message {
-            animation: fadeIn 0.3s ease forwards;
-            padding: 6px 10px;
-            border-left: 3px solid transparent;
-            font-size: 0.95rem;
-        }
-
+        .main-panel { grid-column: 2; display: flex; flex-direction: column; height: 100%; }
+        .log-area { flex: 1; background-color: var(--bg-input); border-radius: var(--radius); padding: 15px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+        .log-message { animation: fadeIn 0.3s ease forwards; padding: 6px 10px; border-left: 3px solid transparent; font-size: 0.95rem; }
         .log-message.system { border-color: var(--text-muted); color: var(--text-muted); }
         .log-message.info { border-color: var(--accent-primary); }
         .log-message.combat-player { border-color: #38bdf8; }
         .log-message.combat-enemy { border-color: var(--color-hp); color: #fca5a5; }
         .log-message.reward { border-color: var(--color-gold); color: #fcd34d; }
         .log-message.danger { border-color: var(--color-hp); color: var(--color-hp); font-weight: bold; }
+        .log-message.inspect { border-color: #a855f7; color: #d8b4fe; font-style: italic; background: rgba(168, 85, 247, 0.05); }
 
-        .action-area {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px;
-            min-height: 80px;
-        }
+        .action-area { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; min-height: 80px; }
 
-        /* ボタンデザイン */
-        .btn {
-            background-color: var(--accent-primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .btn:hover {
-            background-color: var(--accent-hover);
-            transform: translateY(-2px);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            background-color: var(--color-border);
-            color: var(--text-muted);
-            cursor: not-allowed;
-            transform: none;
-        }
-
+        /* ボタン */
+        .btn { background-color: var(--accent-primary); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
         .btn-danger { background-color: var(--color-hp); }
         .btn-danger:hover { background-color: #dc2626; }
 
-        /* 右カラム: インベントリ */
-        .inventory-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        /* 右カラム: バッグ＆インベントリ */
+        .storage-wrapper { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
+        .storage-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .item-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+        
+        .item-row { background-color: var(--bg-input); border: 1px solid var(--color-border); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; animation: fadeIn 0.2s ease; }
+        .item-clickable-name { font-size: 0.9rem; font-weight: 600; cursor: pointer; color: #cbd5e1; transition: var(--transition); display: inline-block; }
+        .item-clickable-name:hover { color: #a855f7; text-decoration: underline; }
+        
+        .item-btn { background-color: var(--color-border); color: var(--text-main); border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; transition: var(--transition); }
+        .item-btn:hover { background-color: var(--accent-primary); }
+        .empty-text { color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px; font-style: italic; }
 
-        .inventory-item {
-            background-color: var(--bg-input);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            padding: 10px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.2s ease;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .item-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .item-name {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .item-effect {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .item-btn {
-            background-color: var(--color-border);
-            color: var(--text-main);
-            border: none;
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .item-btn:hover {
-            background-color: var(--accent-primary);
-        }
-
-        .empty-text {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            text-align: center;
-            margin-top: 20px;
-            font-style: italic;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* レスポンシブ対応 */
         @media (max-width: 900px) {
             body { overflow: auto; height: auto; }
-            .game-container {
-                grid-template-columns: 1fr;
-                height: auto;
-                overflow: visible;
-            }
+            .game-container { grid-template-columns: 1fr; height: auto; }
             .main-panel { order: -1; }
-            .log-area { height: 350px; }
+            .log-area { height: 300px; }
         }
     </style>
 </head>
@@ -305,48 +151,24 @@
         <aside class="panel">
             <h2 class="panel-title">Status</h2>
             <div class="status-item">
-                <div class="status-label">
-                    <span>Name</span>
-                    <span id="char-name" class="status-value">-</span>
-                </div>
+                <div class="status-label"><span>Name</span><span class="status-value">冒険者</span></div>
             </div>
             <div class="status-item">
-                <div class="status-label">
-                    <span>HP</span>
-                    <span id="char-hp-text" class="status-value">0 / 0</span>
-                </div>
-                <div class="bar-container">
-                    <div id="char-hp-bar" class="bar-fill bar-hp" style="width: 100%;"></div>
-                </div>
+                <div class="status-label"><span>HP</span><span id="char-hp-text" class="status-value">0 / 0</span></div>
+                <div class="bar-container"><div id="char-hp-bar" class="bar-fill bar-hp"></div></div>
             </div>
             <div class="status-item">
-                <div class="status-label">
-                    <span>EXP (Next Level)</span>
-                    <span id="char-exp-text" class="status-value">0 / 0</span>
-                </div>
-                <div class="bar-container">
-                    <div id="char-exp-bar" class="bar-fill bar-exp" style="width: 0%;"></div>
-                </div>
+                <div class="status-label"><span>EXP</span><span id="char-exp-text" class="status-value">0 / 0</span></div>
+                <div class="bar-container"><div id="char-exp-bar" class="bar-fill bar-exp"></div></div>
             </div>
 
             <div class="stat-grid">
-                <div class="stat-box">
-                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">LEVEL</div>
-                    <div id="char-level" class="value">1</div>
-                </div>
-                <div class="stat-box">
-                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">ATK</div>
-                    <div id="char-atk" class="value">10</div>
-                </div>
-                <div class="stat-box" style="grid-column: span 2;">
-                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">GOLD</div>
-                    <div id="char-gold" class="value gold">0</div>
-                </div>
+                <div class="stat-box"><div class="status-label" style="justify-content: center; font-size: 0.75rem;">LEVEL</div><div id="char-level" class="value">1</div></div>
+                <div class="stat-box"><div class="status-label" style="justify-content: center; font-size: 0.75rem;">ATK</div><div id="char-atk" class="value">10</div></div>
             </div>
-            
-            <div class="stat-grid" style="margin-top: 10px;">
+            <div class="stat-grid">
                 <div class="stat-box" style="grid-column: span 2; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.1);">
-                    <div class="status-label" style="justify-content: center; font-size: 0.8rem;">CURRENT DEPTH</div>
+                    <div class="status-label" style="justify-content: center; font-size: 0.75rem;">CURRENT DEPTH</div>
                     <div id="dungeon-depth" class="value" style="color: #cbd5e1;">0階層</div>
                 </div>
             </div>
@@ -354,36 +176,49 @@
 
         <main class="panel main-panel">
             <h2 class="panel-title">Adventure Log</h2>
-            <div id="log-area" class="log-area">
-                </div>
-            <div id="action-area" class="action-area">
-                </div>
+            <div id="log-area" class="log-area"></div>
+            <div id="action-area" class="action-area"></div>
         </main>
 
         <aside class="panel">
-            <h2 class="panel-title">Inventory</h2>
-            <div id="inventory-list" class="inventory-list">
+            <div class="storage-wrapper">
+                <div class="storage-section">
+                    <h2 class="panel-title" style="margin-bottom: 5px;">Bag (実用品)</h2>
+                    <div id="bag-list" class="item-list"></div>
                 </div>
+                <div class="storage-section">
+                    <h2 class="panel-title" style="margin-bottom: 5px; border-top: 1px solid var(--color-border); padding-top: 10px;">Inventory (収集品)</h2>
+                    <div id="inventory-list" class="item-list"></div>
+                </div>
+            </div>
         </aside>
     </div>
 
     <script>
         // ==========================================
-        // GAME CONFIGURATION & DICTIONARIES
+        // ITEM & MONSTER DATA DICTIONARIES
         // ==========================================
         const ITEMS = {
-            POTION: { id: 'potion', name: '回復薬', type: 'use', effect: 30, desc: 'HPを30回復' },
-            HI_POTION: { id: 'hi_potion', name: '高級回復薬', type: 'use', effect: 75, desc: 'HPを75回復' },
-            SWORD: { id: 'sword', name: '鉄の剣', type: 'equip', effect: 5, desc: '攻撃力+5 (永続)' },
-            RARE_SWORD: { id: 'rare_sword', name: '魔剣レヴァテイン', type: 'equip', effect: 15, desc: '攻撃力+15 (永続)' }
+            POTION: { id: 'potion', name: '回復薬', type: 'use', effect: 30, desc: '特製の回復薬。飲むとHPが30ポイント回復する。' },
+            HI_POTION: { id: 'hi_potion', name: '高級回復薬', type: 'use', effect: 75, desc: '贅沢に調合された回復薬。飲むとHPが75ポイント回復する。' },
+            EXP_BOOK: { id: 'exp_book', name: '古びた経験書', type: 'exp', effect: 25, desc: '過去の英雄の知識が記された魔導書。読むと経験値を25獲得する。' },
+            SWORD: { id: 'sword', name: '鉄の剣', type: 'equip', effect: 5, desc: '頑丈に鍛えられた鉄の剣。装備すると攻撃力が永続的に5上昇する。' },
+            RARE_SWORD: { id: 'rare_sword', name: '魔剣レヴァテイン', type: 'equip', effect: 15, desc: '赤く揺らめく灼熱の魔剣。装備すると攻撃力が永続的に15上昇する。' },
+            
+            // モンスター固有ドロップ（素材・換金アイテムなど）
+            SLIME_JELLY: { id: 'slime_jelly', name: 'スライムの粘液', type: 'material', desc: 'ひんやりとした緑色のゼリー状の粘液。錬金術の基本素材として重宝される。' },
+            GOBLIN_EAR: { id: 'goblin_ear', name: 'ゴブリンの耳', type: 'material', desc: '討伐証明となる不気味な耳。街のギルドに持ち帰れば、何かの報酬と交換できるかもしれない。' },
+            ORC_ALM: { id: 'orc_alm', name: 'オークの鉄兜', type: 'material', desc: '重厚でひび割れたオークの防具。鍛冶屋に渡せば良い鉄くずとして引き取られる。' },
+            BONESHARD: { id: 'boneshard', name: '呪われた骨片', type: 'material', desc: 'かすかに闇の魔力を帯びた硬い骨の破片。不気味な儀式や呪詛の道具に使われる。' },
+            DRAGON_SCALE: { id: 'dragon_scale', name: '竜の逆鱗', type: 'material', desc: '伝説の竜から剥ぎ取った至高の鱗。圧倒的な硬度を誇り、最高の防具の材料となる。' }
         };
 
         const ENEMIES = [
-            { name: 'スライム', hp: 20, atk: 4, exp: 10, gold: 15 },
-            { name: 'ゴブリン', hp: 35, atk: 7, exp: 18, gold: 25 },
-            { name: '迷宮のオーク', hp: 60, atk: 12, exp: 35, gold: 50 },
-            { name: 'スケルトンナイト', hp: 80, atk: 16, exp: 55, gold: 70 },
-            { name: 'ドラゴン', hp: 200, atk: 28, exp: 150, gold: 200 }
+            { name: 'スライム', hp: 20, atk: 4, exp: 10, gold: 15, drops: [ { item: ITEMS.SLIME_JELLY, chance: 0.7 }, { item: ITEMS.POTION, chance: 0.2 } ] },
+            { name: 'ゴブリン', hp: 35, atk: 7, exp: 18, gold: 25, drops: [ { item: ITEMS.GOBLIN_EAR, chance: 0.6 }, { item: ITEMS.EXP_BOOK, chance: 0.25 } ] },
+            { name: '迷宮のオーク', hp: 60, atk: 12, exp: 35, gold: 50, drops: [ { item: ITEMS.ORC_ALM, chance: 0.6 }, { item: ITEMS.SWORD, chance: 0.2 } ] },
+            { name: 'スケルトンナイト', hp: 80, atk: 16, exp: 55, gold: 70, drops: [ { item: ITEMS.BONESHARD, chance: 0.7 }, { item: ITEMS.HI_POTION, chance: 0.3 } ] },
+            { name: 'ドラゴン', hp: 200, atk: 28, exp: 150, gold: 200, drops: [ { item: ITEMS.DRAGON_SCALE, chance: 1.0 }, { item: ITEMS.RARE_SWORD, chance: 0.4 } ] }
         ];
 
         // ==========================================
@@ -391,28 +226,17 @@
         // ==========================================
         const GameState = {
             player: {
-                name: '冒険者',
-                level: 1,
-                hp: 100,
-                maxHp: 100,
-                atk: 10,
-                exp: 0,
-                nextExp: 20,
-                gold: 0,
-                inventory: [ { ...ITEMS.POTION }, { ...ITEMS.SWORD } ]
+                level: 1, hp: 100, maxHp: 100, atk: 10, exp: 0, nextExp: 20, gold: 50,
+                bag: [ { ...ITEMS.POTION }, { ...ITEMS.EXP_BOOK }, { ...ITEMS.SWORD } ], // すぐ使える物
+                inventory: [] // 収集品・素材
             },
             depth: 0,
             currentEnemy: null,
-            gameState: 'TITLE', // TITLE, EXPLORE, COMBAT, TREASURE, GAMEOVER
+            gameState: 'TITLE',
 
-            // 状態変更通知用のリスナー
             listeners: [],
-            subscribe(listener) {
-                this.listeners.push(listener);
-            },
-            update() {
-                this.listeners.forEach(listener => listener(this));
-            }
+            subscribe(listener) { this.listeners.push(listener); },
+            update() { this.listeners.forEach(listener => listener(this)); }
         };
 
         // ==========================================
@@ -427,79 +251,62 @@
 
             startNewGame() {
                 GameState.player = {
-                    name: '冒険者',
-                    level: 1,
-                    hp: 100,
-                    maxHp: 100,
-                    atk: 10,
-                    exp: 0,
-                    nextExp: 20,
-                    gold: 50,
-                    inventory: [ { ...ITEMS.POTION }, { ...ITEMS.POTION } ]
+                    level: 1, hp: 100, maxHp: 100, atk: 10, exp: 0, nextExp: 20, gold: 50,
+                    bag: [ { ...ITEMS.POTION }, { ...ITEMS.POTION }, { ...ITEMS.EXP_BOOK } ],
+                    inventory: []
                 };
                 GameState.depth = 0;
                 GameState.currentEnemy = null;
                 GameState.gameState = 'EXPLORE';
                 
                 UI.clearLog();
-                UI.addLog('--- 迷宮の探索が始まった。無限の闇があなたを迎え入れる。 ---', 'system');
+                UI.addLog('--- 迷宮の探索が始まった。無限の闇があなたを迎え入れる。 ---', 'system', false);
                 GameState.update();
             },
 
-            // 探索を進める
             explore() {
                 GameState.depth++;
                 const rand = Math.random();
 
                 if (rand < 0.15) {
-                    // 平穏な道
-                    UI.addLog(`${GameState.depth}階層を進む。周囲は静まり返っている。安全に休憩がとれそうだ。`, 'info');
+                    UI.addLog(`${GameState.depth}階層を進む。周囲は静まり返っている。安全に休憩がとれそうだ。`, 'info', false);
                     GameState.gameState = 'EXPLORE';
-                } else if (rand < 0.50) {
-                    // 宝箱発見
-                    UI.addLog(`${GameState.depth}階層の暗がりに、古びた宝箱が佇んでいるのを発見した！`, 'reward');
+                } else if (rand < 0.45) {
+                    UI.addLog(`${GameState.depth}階層の暗がりに、古びた宝箱が佇んでいるのを発見した！`, 'reward', true);
                     GameState.gameState = 'TREASURE';
                 } else {
-                    // 敵と遭遇
                     this.triggerCombat();
                 }
                 GameState.update();
             },
 
-            // 戦闘発生
             triggerCombat() {
-                // 階層に応じて敵の強さをスケーリング
-                const enemyIndex = Math.min(
-                    Math.floor(Math.random() * (1 + Math.floor(GameState.depth / 4))), 
-                    ENEMIES.length - 1
-                );
+                const enemyIndex = Math.min(Math.floor(Math.random() * (1 + Math.floor(GameState.depth / 4))), ENEMIES.length - 1);
                 const baseEnemy = ENEMIES[enemyIndex];
-                
-                // 深さに応じた微細な強化
                 const scale = 1 + (GameState.depth * 0.05);
+
                 GameState.currentEnemy = {
                     name: baseEnemy.name,
                     hp: Math.floor(baseEnemy.hp * scale),
                     maxHp: Math.floor(baseEnemy.hp * scale),
                     atk: Math.floor(baseEnemy.atk * scale),
                     exp: Math.floor(baseEnemy.exp * scale),
-                    gold: Math.floor(baseEnemy.gold * scale)
+                    gold: Math.floor(baseEnemy.gold * scale),
+                    drops: baseEnemy.drops
                 };
 
-                UI.addLog(`前方から不気味な気配が迫る！【${GameState.currentEnemy.name}】が現れた！`, 'danger');
+                UI.addLog(`前方から不気味な気配が迫る！【${GameState.currentEnemy.name}】が現れた！`, 'danger', true);
                 GameState.gameState = 'COMBAT';
             },
 
-            // 戦闘：攻撃
             attackTurn() {
                 if (GameState.gameState !== 'COMBAT' || !GameState.currentEnemy) return;
 
                 // プレイヤーの攻撃
                 const pDmg = Math.floor(GameState.player.atk * (0.9 + Math.random() * 0.3));
                 GameState.currentEnemy.hp -= pDmg;
-                UI.addLog(`あなたの攻撃！ ${GameState.currentEnemy.name}に ${pDmg} のダメージを与えた！`, 'combat-player');
+                UI.addLog(`${GameState.currentEnemy.name}に ${pDmg} のダメージを与えた！`, 'combat-player', true);
 
-                // 敵の死亡判定
                 if (GameState.currentEnemy.hp <= 0) {
                     this.winCombat();
                     return;
@@ -508,30 +315,26 @@
                 // 敵の反撃
                 const eDmg = Math.floor(GameState.currentEnemy.atk * (0.9 + Math.random() * 0.3));
                 GameState.player.hp -= eDmg;
-                UI.addLog(`${GameState.currentEnemy.name}の反撃！ あなたは ${eDmg} のダメージを受けた！`, 'combat-enemy');
+                UI.addLog(`あなたは ${eDmg} のダメージを受けた！`, 'combat-enemy', true);
 
-                // プレイヤーの死亡判定
                 if (GameState.player.hp <= 0) {
                     GameState.player.hp = 0;
                     this.gameOver();
                     return;
                 }
-
                 GameState.update();
             },
 
-            // 戦闘：逃亡
             flee() {
                 if (Math.random() < 0.4) {
-                    UI.addLog('うまく敵の隙を突いて逃げ出すことに成功した！', 'info');
+                    UI.addLog('うまく敵の隙を突いて逃げ出すことに成功した！', 'info', false);
                     GameState.currentEnemy = null;
                     GameState.gameState = 'EXPLORE';
                 } else {
-                    UI.addLog('逃げ出そうとしたが、敵に回り込まれてしまった！', 'combat-enemy');
-                    // 隙を突かれてダメージ
+                    UI.addLog('逃げ出そうとしたが、敵に回り込まれてしまった！', 'combat-enemy', false);
                     const eDmg = Math.floor(GameState.currentEnemy.atk * 0.7);
                     GameState.player.hp -= eDmg;
-                    UI.addLog(`${GameState.currentEnemy.name}から ${eDmg} の一撃を受ける！`, 'combat-enemy');
+                    UI.addLog(`背後から ${eDmg} のダメージを受けた！`, 'combat-enemy', true);
                     
                     if (GameState.player.hp <= 0) {
                         GameState.player.hp = 0;
@@ -542,201 +345,226 @@
                 GameState.update();
             },
 
-            // 戦闘勝利
             winCombat() {
                 const enemy = GameState.currentEnemy;
-                UI.addLog(`${enemy.name}を討伐した！`, 'info');
+                UI.addLog(`${enemy.name}を討伐した！`, 'info', true);
                 
-                // 報酬
-                GameState.player.gold += enemy.gold;
-                UI.addLog(`戦利品: ${enemy.gold} コインを獲得。`, 'reward');
-                
+                // コイン獲得（インベントリ直行）
+                this.gainGold(enemy.gold);
                 this.gainExp(enemy.exp);
-                this.dropChance(0.4); // 40%でアイテムドロップ
+                
+                // 複数ドロップ判定
+                enemy.drops.forEach(dropConfig => {
+                    if (Math.random() < dropConfig.chance) {
+                        this.acquireItem(dropConfig.item);
+                    }
+                });
 
                 GameState.currentEnemy = null;
                 GameState.gameState = 'EXPLORE';
                 GameState.update();
             },
 
-            // 宝箱を開ける
             openTreasure() {
                 const rand = Math.random();
-                if (rand < 0.4) {
-                    // コイン
-                    const goldFound = Math.floor(20 + Math.random() * 40 + (GameState.depth * 5));
-                    GameState.player.gold += goldFound;
-                    UI.addLog(`宝箱には大量のコインが入っていた！ 【${goldFound}コイン】を手に入れた。`, 'reward');
-                } else if (rand < 0.75) {
-                    // 薬品
-                    const item = Math.random() < 0.8 ? { ...ITEMS.POTION } : { ...ITEMS.HI_POTION };
-                    GameState.player.inventory.push(item);
-                    UI.addLog(`宝箱から不思議な小瓶を発見した！ 【${item.name}】を手に入れた。`, 'reward');
+                if (rand < 0.3) {
+                    this.gainGold(Math.floor(20 + Math.random() * 40 + (GameState.depth * 5)));
+                } else if (rand < 0.6) {
+                    const item = Math.random() < 0.7 ? ITEMS.POTION : ITEMS.HI_POTION;
+                    this.acquireItem(item);
+                } else if (rand < 0.85) {
+                    this.acquireItem(ITEMS.EXP_BOOK);
                 } else {
-                    // 武器
-                    const item = Math.random() < 0.85 ? { ...ITEMS.SWORD } : { ...ITEMS.RARE_SWORD };
-                    GameState.player.inventory.push(item);
-                    UI.addLog(`宝箱の底に眩しく輝く武具が眠っていた！ 【${item.name}】を手に入れた。`, 'reward');
+                    const item = Math.random() < 0.85 ? ITEMS.SWORD : ITEMS.RARE_SWORD;
+                    this.acquireItem(item);
                 }
-
                 GameState.gameState = 'EXPLORE';
                 GameState.update();
             },
 
-            // 経験値獲得とレベルアップ
+            // ゴールド獲得
+            gainGold(amount) {
+                GameState.player.gold += amount;
+                UI.addLog(`${amount} コインを手に入れた。`, 'reward', true);
+                
+                // インベントリ内に反映させるため擬似的に同期
+                const existingGold = GameState.player.inventory.find(i => i.id === 'gold_pile');
+                if (existingGold) {
+                    existingGold.count = GameState.player.gold;
+                }
+            },
+
+            // アイテムの獲得自動振り分け
+            acquireItem(itemConfig) {
+                UI.addLog(`【${itemConfig.name}】を手に入れた。`, 'reward', true);
+
+                if (itemConfig.type === 'use' || itemConfig.type === 'equip' || itemConfig.type === 'exp') {
+                    // 実用品はバッグへ
+                    GameState.player.bag.push({ ...itemConfig });
+                } else {
+                    // 素材・収集品はスタック可能にしてインベントリへ
+                    const match = GameState.player.inventory.find(i => i.id === itemConfig.id);
+                    if (match) {
+                        match.count++;
+                    } else {
+                        GameState.player.inventory.push({ ...itemConfig, count: 1 });
+                    }
+                }
+            },
+
+            // バッグアイテムの使用
+            useBagItem(index) {
+                const item = GameState.player.bag[index];
+                if (!item) return;
+
+                if (item.type === 'use') {
+                    if (GameState.player.hp >= GameState.player.maxHp) {
+                        UI.addLog('体力は既に満タンだ。', 'system', false);
+                        return;
+                    }
+                    GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + item.effect);
+                    UI.addLog(`【${item.name}】を使用し、HPが ${item.effect} 回復した。`, 'info', true);
+                    GameState.player.bag.splice(index, 1);
+                } else if (item.type === 'equip') {
+                    GameState.player.atk += item.effect;
+                    UI.addLog(`【${item.name}】を装備し、攻撃力が永続的に ${item.effect} 上昇した。`, 'reward', true);
+                    GameState.player.bag.splice(index, 1);
+                } else if (item.type === 'exp') {
+                    UI.addLog(`【${item.name}】を使用した。`, 'info', true);
+                    GameState.player.bag.splice(index, 1);
+                    this.gainExp(item.effect);
+                }
+
+                GameState.update();
+            },
+
             gainExp(amount) {
                 GameState.player.exp += amount;
-                UI.addLog(`${amount} の経験値を獲得した。`, 'info');
+                UI.addLog(`${amount} の経験値を獲得した。`, 'info', false);
 
                 if (GameState.player.exp >= GameState.player.nextExp) {
                     GameState.player.level++;
                     GameState.player.exp -= GameState.player.nextExp;
                     GameState.player.nextExp = Math.floor(GameState.player.nextExp * 1.5);
                     
-                    // ステータス上昇
-                    const hpIncrease = 15 + Math.floor(Math.random() * 10);
-                    const atkIncrease = 2 + Math.floor(Math.random() * 3);
+                    const hpInc = 15 + Math.floor(Math.random() * 10);
+                    const atkInc = 2 + Math.floor(Math.random() * 3);
                     
-                    GameState.player.maxHp += hpIncrease;
-                    GameState.player.hp = GameState.player.maxHp; // レベルアップで全回復
-                    GameState.player.atk += atkIncrease;
+                    GameState.player.maxHp += hpInc;
+                    GameState.player.hp = GameState.player.maxHp;
+                    GameState.player.atk += atkInc;
 
-                    UI.addLog(`★★ レベルアップ！ レベルが ${GameState.player.level} に上がった！ ★★`, 'reward');
-                    UI.addLog(`最大HPが ${hpIncrease} 上昇し、全回復した。攻撃力が ${atkIncrease} 上昇した。`, 'info');
+                    UI.addLog(`レベルが ${GameState.player.level} に上がった！`, 'reward', true);
                 }
             },
 
-            // アイテムドロップ処理
-            dropChance(probability) {
-                if (Math.random() < probability) {
-                    const pool = [ITEMS.POTION, ITEMS.POTION, ITEMS.HI_POTION, ITEMS.SWORD];
-                    const selected = pool[Math.floor(Math.random() * pool.length)];
-                    GameState.player.inventory.push({ ...selected });
-                    UI.addLog(`敵が何かを落とした！ 【${selected.name}】を拾い上げ、鞄にしまった。`, 'reward');
-                }
+            inspectItem(item) {
+                UI.addLog(`[鑑定] ${item.name}: ${item.desc}`, 'inspect', false);
             },
 
-            // アイテムの使用・装備
-            useItem(index) {
-                const item = GameState.player.inventory[index];
-                if (!item) return;
-
-                if (item.type === 'use') {
-                    // 回復アイテム
-                    if (GameState.player.hp >= GameState.player.maxHp) {
-                        UI.addLog('体力は既に満タンだ。', 'system');
-                        return;
-                    }
-                    GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + item.effect);
-                    UI.addLog(`【${item.name}】を使用した。HPが ${item.effect} 回復した。`, 'info');
-                    GameState.player.inventory.splice(index, 1); // 消費
-                } else if (item.type === 'equip') {
-                    // 装備アイテム
-                    GameState.player.atk += item.effect;
-                    UI.addLog(`【${item.name}】を装備した！ 攻撃力が永続的に ${item.effect} 上昇した。`, 'reward');
-                    GameState.player.inventory.splice(index, 1); // 装備として消費（永続化）
-                }
-
-                GameState.update();
-            },
-
-            // ゲームオーバー
             gameOver() {
-                UI.addLog(`目の前が真っ暗になった... あなたは${GameState.depth}階層で力尽きた。`, 'danger');
+                UI.addLog(`あなたは力尽きた。迷宮に魂が囚われた...`, 'danger', true);
                 GameState.gameState = 'GAMEOVER';
                 GameState.update();
             }
         };
 
         // ==========================================
-        // UI RENDERING ENGINE (DOM INFRASTRUCTURE)
+        // UI RENDERING ENGINE & VOICE SYSTEM
         // ==========================================
         const UI = {
             init() {
-                this.charName = document.getElementById('char-name');
                 this.charHpText = document.getElementById('char-hp-text');
                 this.charHpBar = document.getElementById('char-hp-bar');
                 this.charExpText = document.getElementById('char-exp-text');
                 this.charExpBar = document.getElementById('char-exp-bar');
                 this.charLevel = document.getElementById('char-level');
                 this.charAtk = document.getElementById('char-atk');
-                this.charGold = document.getElementById('char-gold');
                 this.dungeonDepth = document.getElementById('dungeon-depth');
                 this.logArea = document.getElementById('log-area');
                 this.actionArea = document.getElementById('action-area');
+                this.bagList = document.getElementById('bag-list');
                 this.inventoryList = document.getElementById('inventory-list');
             },
 
-            clearLog() {
-                this.logArea.innerHTML = '';
-            },
+            clearLog() { this.logArea.innerHTML = ''; },
 
-            addLog(text, type = 'info') {
+            addLog(text, type = 'info', shouldSpeak = false) {
                 const msg = document.createElement('div');
                 msg.className = `log-message ${type}`;
                 msg.innerText = text;
                 this.logArea.appendChild(msg);
                 this.logArea.scrollTop = this.logArea.scrollHeight;
 
-                // ─── 【音声合成システム】の融合箇所 ───
-                // 記号や装飾（「★」や「---」など）は読み上げると不自然なので少し削る
-                const cleanText = text.replace(/[★\-\[\]【】]/g, '');
+                // 条件に合う重要セリフだけを「普通のスピード(1.0)」でアナウンス
+                if (shouldSpeak) {
+                    const cleanText = text.replace(/[★\-\[\]【】]/g, '');
+                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                    utterance.lang = 'ja-JP';
+                    utterance.rate = 1.0;  // 人間が普通に話すスピード
+                    utterance.pitch = 0.85; // 冷静なシステムボイス
+                    utterance.volume = 0.8;
 
-                // 音声合成のインスタンスを作成
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.lang = 'ja-JP';
-                utterance.rate = 1.3;  // 読み上げ速度
-                utterance.pitch = 0.8; // 音程（アンドロイド感のあるやや低音）
-                utterance.volume = 0.8; // 音量
-
-                // 連続クリック時に音声が遅延して渋滞するのを防ぐため、前の音声をキャンセルして再生
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(utterance);
-                // ──────────────────────────────────
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(utterance);
+                }
             },
 
             render(state) {
-                // 1. ステータスの同期
-                UI.charName.innerText = state.player.name;
+                // 1. ステータス同期
                 UI.charHpText.innerText = `${state.player.hp} / ${state.player.maxHp}`;
-                
-                const hpPercent = (state.player.hp / state.player.maxHp) * 100;
-                UI.charHpBar.style.width = `${hpPercent}%`;
-
+                UI.charHpBar.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
                 UI.charExpText.innerText = `${state.player.exp} / ${state.player.nextExp}`;
-                const expPercent = (state.player.exp / state.player.nextExp) * 100;
-                UI.charExpBar.style.width = `${expPercent}%`;
-
+                UI.charExpBar.style.width = `${(state.player.exp / state.player.nextExp) * 100}%`;
                 UI.charLevel.innerText = state.player.level;
                 UI.charAtk.innerText = state.player.atk;
-                UI.charGold.innerText = state.player.gold;
                 UI.dungeonDepth.innerText = `${state.depth} 階層`;
 
-                // 2. インベントリの動的描写
-                UI.inventoryList.innerHTML = '';
-                if (state.player.inventory.length === 0) {
-                    UI.inventoryList.innerHTML = '<div class="empty-text">鞄は空っぽです</div>';
+                // 2. バッグの描写 (実用品)
+                UI.bagList.innerHTML = '';
+                if (state.player.bag.length === 0) {
+                    UI.bagList.innerHTML = '<div class="empty-text">バッグは空です</div>';
                 } else {
-                    state.player.inventory.forEach((item, idx) => {
-                        const itemEl = document.createElement('div');
-                        itemEl.className = 'inventory-item';
+                    state.player.bag.forEach((item, idx) => {
+                        const row = document.createElement('div');
+                        row.className = 'item-row';
+                        const actionLabel = item.type === 'equip' ? '装備' : '使用';
                         
-                        const actionLabel = item.type === 'equip' ? '装備' : '使う';
-                        
-                        itemEl.innerHTML = `
-                            <div class="item-info">
-                                <span class="item-name">${item.name}</span>
-                                <span class="item-effect">${item.desc}</span>
-                            </div>
-                            <button class="item-btn" onclick="GameController.useItem(${idx})">${actionLabel}</button>
+                        // 安全に変数を渡すためにonclick属性に仕込むオブジェクトをエスケープ化
+                        row.innerHTML = `
+                            <span class="item-clickable-name" onclick="GameController.inspectItem({name:'${item.name}', desc:'${item.desc}'})">${item.name}</span>
+                            <button class="item-btn" onclick="GameController.useBagItem(${idx})">${actionLabel}</button>
                         `;
-                        UI.inventoryList.appendChild(itemEl);
+                        UI.bagList.appendChild(row);
                     });
                 }
 
-                // 3. アクションエリア（選択肢）の動的制御
-                UI.actionArea.innerHTML = '';
+                // 3. インベントリの描写 (収集品、コインもここに統合表示)
+                UI.inventoryList.innerHTML = '';
                 
+                // コインの表示
+                const goldRow = document.createElement('div');
+                goldRow.className = 'item-row';
+                goldRow.innerHTML = `
+                    <span class="item-clickable-name" style="color:var(--color-gold);" onclick="GameController.inspectItem({name:'コイン', desc:'迷宮内で流通している輝く金貨。今後のアップデートでショップ等で利用可能です。'})">所持コイン</span>
+                    <span style="font-size:0.9rem; font-weight:bold; color:var(--color-gold);">${state.player.gold} G</span>
+                `;
+                UI.inventoryList.appendChild(goldRow);
+
+                if (state.player.inventory.length > 0) {
+                    state.player.inventory.forEach((item) => {
+                        const row = document.createElement('div');
+                        row.className = 'item-row';
+                        row.innerHTML = `
+                            <span class="item-clickable-name" onclick="GameController.inspectItem({name:'${item.name}', desc:'${item.desc}'})">${item.name}</span>
+                            <span style="font-size:0.85rem; color:var(--text-muted);">x${item.count}</span>
+                        `;
+                        UI.inventoryList.appendChild(row);
+                    });
+                }
+
+                // 4. アクションボタンの制御
+                UI.actionArea.innerHTML = '';
                 if (state.gameState === 'EXPLORE') {
                     UI.createActionButton('奥へ進む', () => GameController.explore());
                 } else if (state.gameState === 'COMBAT') {
@@ -758,12 +586,7 @@
             }
         };
 
-        // ==========================================
-        // GAME START ENTRYPOINT
-        // ==========================================
-        window.onload = () => {
-            GameController.init();
-        };
+        window.onload = () => { GameController.init(); };
     </script>
 </body>
 </html>
