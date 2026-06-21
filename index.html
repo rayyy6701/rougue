@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Roguelike RPG with Voice</title>
+    <title>Advanced Roguelike RPG with Custom Voice</title>
     <style>
         :root {
             --bg-main: #0f111a;
@@ -205,7 +205,6 @@
             SWORD: { id: 'sword', name: '鉄の剣', type: 'equip', effect: 5, desc: '頑丈に鍛えられた鉄の剣。装備すると攻撃力が永続的に5上昇する。' },
             RARE_SWORD: { id: 'rare_sword', name: '魔剣レヴァテイン', type: 'equip', effect: 15, desc: '赤く揺らめく灼熱の魔剣。装備すると攻撃力が永続的に15上昇する。' },
             
-            // モンスター固有ドロップ（素材・換金アイテムなど）
             SLIME_JELLY: { id: 'slime_jelly', name: 'スライムの粘液', type: 'material', desc: 'ひんやりとした緑色のゼリー状の粘液。錬金術の基本素材として重宝される。' },
             GOBLIN_EAR: { id: 'goblin_ear', name: 'ゴブリンの耳', type: 'material', desc: '討伐証明となる不気味な耳。街のギルドに持ち帰れば、何かの報酬と交換できるかもしれない。' },
             ORC_ALM: { id: 'orc_alm', name: 'オークの鉄兜', type: 'material', desc: '重厚でひび割れたオークの防具。鍛冶屋に渡せば良い鉄くずとして引き取られる。' },
@@ -227,8 +226,8 @@
         const GameState = {
             player: {
                 level: 1, hp: 100, maxHp: 100, atk: 10, exp: 0, nextExp: 20, gold: 50,
-                bag: [ { ...ITEMS.POTION }, { ...ITEMS.EXP_BOOK }, { ...ITEMS.SWORD } ], // すぐ使える物
-                inventory: [] // 収集品・素材
+                bag: [ { ...ITEMS.POTION }, { ...ITEMS.EXP_BOOK }, { ...ITEMS.SWORD } ],
+                inventory: []
             },
             depth: 0,
             currentEnemy: null,
@@ -260,7 +259,7 @@
                 GameState.gameState = 'EXPLORE';
                 
                 UI.clearLog();
-                UI.addLog('--- 迷宮の探索が始まった。無限の闇があなたを迎え入れる。 ---', 'system', false);
+                UI.addLog('--- 迷宮の探索が始まった。無限の闇があなたを迎え入れる。 ---', 'system', null);
                 GameState.update();
             },
 
@@ -269,10 +268,10 @@
                 const rand = Math.random();
 
                 if (rand < 0.15) {
-                    UI.addLog(`${GameState.depth}階層を進む。周囲は静まり返っている。安全に休憩がとれそうだ。`, 'info', false);
+                    UI.addLog(`${GameState.depth}階層を進む。周囲は静まり返っている。安全に休憩がとれそうだ。`, 'info', null);
                     GameState.gameState = 'EXPLORE';
                 } else if (rand < 0.45) {
-                    UI.addLog(`${GameState.depth}階層の暗がりに、古びた宝箱が佇んでいるのを発見した！`, 'reward', true);
+                    UI.addLog(`${GameState.depth}階層の暗がりに、古びた宝箱が佇んでいるのを発見した！`, 'reward', null);
                     GameState.gameState = 'TREASURE';
                 } else {
                     this.triggerCombat();
@@ -295,7 +294,8 @@
                     drops: baseEnemy.drops
                 };
 
-                UI.addLog(`前方から不気味な気配が迫る！【${GameState.currentEnemy.name}】が現れた！`, 'danger', true);
+                // 画面表示はフルテキスト、音声は「魔物名＋が現れた」のみ
+                UI.addLog(`前方から不気味な気配が迫る！【${GameState.currentEnemy.name}】が現れた！`, 'danger', `${GameState.currentEnemy.name}が現れた`);
                 GameState.gameState = 'COMBAT';
             },
 
@@ -305,7 +305,8 @@
                 // プレイヤーの攻撃
                 const pDmg = Math.floor(GameState.player.atk * (0.9 + Math.random() * 0.3));
                 GameState.currentEnemy.hp -= pDmg;
-                UI.addLog(`${GameState.currentEnemy.name}に ${pDmg} のダメージを与えた！`, 'combat-player', true);
+                // 画面はフルテキスト、音声は「〇〇のダメージを与えた」のみ
+                UI.addLog(`${GameState.currentEnemy.name}に ${pDmg} のダメージを与えた！`, 'combat-player', `${pDmg}のダメージを与えた`);
 
                 if (GameState.currentEnemy.hp <= 0) {
                     this.winCombat();
@@ -315,7 +316,8 @@
                 // 敵の反撃
                 const eDmg = Math.floor(GameState.currentEnemy.atk * (0.9 + Math.random() * 0.3));
                 GameState.player.hp -= eDmg;
-                UI.addLog(`あなたは ${eDmg} のダメージを受けた！`, 'combat-enemy', true);
+                // 音声は「〇〇のダメージを受けた」のみ
+                UI.addLog(`あなたは ${eDmg} のダメージを受けた！`, 'combat-enemy', `${eDmg}のダメージを受けた`);
 
                 if (GameState.player.hp <= 0) {
                     GameState.player.hp = 0;
@@ -327,14 +329,14 @@
 
             flee() {
                 if (Math.random() < 0.4) {
-                    UI.addLog('うまく敵の隙を突いて逃げ出すことに成功した！', 'info', false);
+                    UI.addLog('うまく敵の隙を突いて逃げ出すことに成功した！', 'info', null);
                     GameState.currentEnemy = null;
                     GameState.gameState = 'EXPLORE';
                 } else {
-                    UI.addLog('逃げ出そうとしたが、敵に回り込まれてしまった！', 'combat-enemy', false);
+                    UI.addLog('逃げ出そうとしたが、敵に回り込まれてしまった！', 'combat-enemy', null);
                     const eDmg = Math.floor(GameState.currentEnemy.atk * 0.7);
                     GameState.player.hp -= eDmg;
-                    UI.addLog(`背後から ${eDmg} のダメージを受けた！`, 'combat-enemy', true);
+                    UI.addLog(`背後から ${eDmg} のダメージを受けた！`, 'combat-enemy', `${eDmg}のダメージを受けた`);
                     
                     if (GameState.player.hp <= 0) {
                         GameState.player.hp = 0;
@@ -347,13 +349,11 @@
 
             winCombat() {
                 const enemy = GameState.currentEnemy;
-                UI.addLog(`${enemy.name}を討伐した！`, 'info', true);
+                UI.addLog(`${enemy.name}を討伐した！`, 'info', `${enemy.name}を討伐した`);
                 
-                // コイン獲得（インベントリ直行）
                 this.gainGold(enemy.gold);
                 this.gainExp(enemy.exp);
                 
-                // 複数ドロップ判定
                 enemy.drops.forEach(dropConfig => {
                     if (Math.random() < dropConfig.chance) {
                         this.acquireItem(dropConfig.item);
@@ -382,55 +382,45 @@
                 GameState.update();
             },
 
-            // ゴールド獲得
             gainGold(amount) {
                 GameState.player.gold += amount;
-                UI.addLog(`${amount} コインを手に入れた。`, 'reward', true);
+                UI.addLog(`${amount} コインを手に入れた。`, 'reward', `${amount} コインを手に入れた`);
                 
-                // インベントリ内に反映させるため擬似的に同期
                 const existingGold = GameState.player.inventory.find(i => i.id === 'gold_pile');
-                if (existingGold) {
-                    existingGold.count = GameState.player.gold;
-                }
+                if (existingGold) { existingGold.count = GameState.player.gold; }
             },
 
-            // アイテムの獲得自動振り分け
             acquireItem(itemConfig) {
-                UI.addLog(`【${itemConfig.name}】を手に入れた。`, 'reward', true);
+                // 丸ごと読み上げ
+                UI.addLog(`【${itemConfig.name}】を手に入れた。`, 'reward', `${itemConfig.name}を手に入れた`);
 
                 if (itemConfig.type === 'use' || itemConfig.type === 'equip' || itemConfig.type === 'exp') {
-                    // 実用品はバッグへ
                     GameState.player.bag.push({ ...itemConfig });
                 } else {
-                    // 素材・収集品はスタック可能にしてインベントリへ
                     const match = GameState.player.inventory.find(i => i.id === itemConfig.id);
-                    if (match) {
-                        match.count++;
-                    } else {
-                        GameState.player.inventory.push({ ...itemConfig, count: 1 });
-                    }
+                    if (match) { match.count++; } else { GameState.player.inventory.push({ ...itemConfig, count: 1 }); }
                 }
             },
 
-            // バッグアイテムの使用
             useBagItem(index) {
                 const item = GameState.player.bag[index];
                 if (!item) return;
 
                 if (item.type === 'use') {
                     if (GameState.player.hp >= GameState.player.maxHp) {
-                        UI.addLog('体力は既に満タンだ。', 'system', false);
+                        UI.addLog('体力は既に満タンだ。', 'system', null);
                         return;
                     }
                     GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + item.effect);
-                    UI.addLog(`【${item.name}】を使用し、HPが ${item.effect} 回復した。`, 'info', true);
+                    // 使用時と、起こった効果を連続・あるいは一体化させて丸ごと読む
+                    UI.addLog(`【${item.name}】を使用し、HPが ${item.effect} 回復した。`, 'info', `${item.name}を使用し、エイチピーが ${item.effect} 回復した`);
                     GameState.player.bag.splice(index, 1);
                 } else if (item.type === 'equip') {
                     GameState.player.atk += item.effect;
-                    UI.addLog(`【${item.name}】を装備し、攻撃力が永続的に ${item.effect} 上昇した。`, 'reward', true);
+                    UI.addLog(`【${item.name}】を装備し、攻撃力が永続的に ${item.effect} 上昇した。`, 'reward', `${item.name}を装備し、攻撃力が永続的に ${item.effect} 上昇した`);
                     GameState.player.bag.splice(index, 1);
                 } else if (item.type === 'exp') {
-                    UI.addLog(`【${item.name}】を使用した。`, 'info', true);
+                    UI.addLog(`【${item.name}】を使用した。`, 'info', `${item.name}を使用した`);
                     GameState.player.bag.splice(index, 1);
                     this.gainExp(item.effect);
                 }
@@ -440,7 +430,8 @@
 
             gainExp(amount) {
                 GameState.player.exp += amount;
-                UI.addLog(`${amount} の経験値を獲得した。`, 'info', false);
+                // 経験値獲得を丸ごと読む
+                UI.addLog(`${amount} の経験値を獲得した。`, 'info', `${amount} の経験値を獲得した`);
 
                 if (GameState.player.exp >= GameState.player.nextExp) {
                     GameState.player.level++;
@@ -454,16 +445,18 @@
                     GameState.player.hp = GameState.player.maxHp;
                     GameState.player.atk += atkInc;
 
-                    UI.addLog(`レベルが ${GameState.player.level} に上がった！`, 'reward', true);
+                    // レベルアップを丸ごと読む
+                    UI.addLog(`レベルが ${GameState.player.level} に上がった！`, 'reward', `レベルが ${GameState.player.level} に上がった`);
                 }
             },
 
             inspectItem(item) {
-                UI.addLog(`[鑑定] ${item.name}: ${item.desc}`, 'inspect', false);
+                // 鑑定時、解説を丸ごと読む（[鑑定] などの記号だけボイス側で除外）
+                UI.addLog(`[鑑定] ${item.name}: ${item.desc}`, 'inspect', `${item.name}。 ${item.desc}`);
             },
 
             gameOver() {
-                UI.addLog(`あなたは力尽きた。迷宮に魂が囚われた...`, 'danger', true);
+                UI.addLog(`あなたは力尽きた。迷宮に魂が囚われた...`, 'danger', `あなたは力尽きた。迷宮に魂が囚われた`);
                 GameState.gameState = 'GAMEOVER';
                 GameState.update();
             }
@@ -489,20 +482,21 @@
 
             clearLog() { this.logArea.innerHTML = ''; },
 
-            addLog(text, type = 'info', shouldSpeak = false) {
+            addLog(text, type = 'info', speakText = null) {
                 const msg = document.createElement('div');
                 msg.className = `log-message ${type}`;
                 msg.innerText = text;
                 this.logArea.appendChild(msg);
                 this.logArea.scrollTop = this.logArea.scrollHeight;
 
-                // 条件に合う重要セリフだけを「普通のスピード(1.0)」でアナウンス
-                if (shouldSpeak) {
-                    const cleanText = text.replace(/[★\-\[\]【】]/g, '');
-                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                // 指定された専用の音声用テキスト（speakText）がある場合のみ発話する仕組み
+                if (speakText) {
+                    // 音声読み上げ時に不自然になる記号を事前にカット
+                    const cleanVoiceText = speakText.replace(/[★\-\[\]【】]/g, '');
+                    const utterance = new SpeechSynthesisUtterance(cleanVoiceText);
                     utterance.lang = 'ja-JP';
-                    utterance.rate = 1.0;  // 人間が普通に話すスピード
-                    utterance.pitch = 0.85; // 冷静なシステムボイス
+                    utterance.rate = 1.0;   // 人間が話す普通のスピード
+                    utterance.pitch = 0.9;  // 冷静で聞き取りやすいトーン
                     utterance.volume = 0.8;
 
                     window.speechSynthesis.cancel();
@@ -511,7 +505,6 @@
             },
 
             render(state) {
-                // 1. ステータス同期
                 UI.charHpText.innerText = `${state.player.hp} / ${state.player.maxHp}`;
                 UI.charHpBar.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
                 UI.charExpText.innerText = `${state.player.exp} / ${state.player.nextExp}`;
@@ -520,7 +513,7 @@
                 UI.charAtk.innerText = state.player.atk;
                 UI.dungeonDepth.innerText = `${state.depth} 階層`;
 
-                // 2. バッグの描写 (実用品)
+                // バッグの描写
                 UI.bagList.innerHTML = '';
                 if (state.player.bag.length === 0) {
                     UI.bagList.innerHTML = '<div class="empty-text">バッグは空です</div>';
@@ -529,8 +522,6 @@
                         const row = document.createElement('div');
                         row.className = 'item-row';
                         const actionLabel = item.type === 'equip' ? '装備' : '使用';
-                        
-                        // 安全に変数を渡すためにonclick属性に仕込むオブジェクトをエスケープ化
                         row.innerHTML = `
                             <span class="item-clickable-name" onclick="GameController.inspectItem({name:'${item.name}', desc:'${item.desc}'})">${item.name}</span>
                             <button class="item-btn" onclick="GameController.useBagItem(${idx})">${actionLabel}</button>
@@ -539,10 +530,8 @@
                     });
                 }
 
-                // 3. インベントリの描写 (収集品、コインもここに統合表示)
+                // インベントリの描写
                 UI.inventoryList.innerHTML = '';
-                
-                // コインの表示
                 const goldRow = document.createElement('div');
                 goldRow.className = 'item-row';
                 goldRow.innerHTML = `
@@ -563,7 +552,7 @@
                     });
                 }
 
-                // 4. アクションボタンの制御
+                // アクションボタン
                 UI.actionArea.innerHTML = '';
                 if (state.gameState === 'EXPLORE') {
                     UI.createActionButton('奥へ進む', () => GameController.explore());
